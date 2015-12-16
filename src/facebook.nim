@@ -1,71 +1,62 @@
 ## Facebook SDK Public API
 
+import dom
 import times
 
+const
+  SKUnknown*       : cstring = "unknown"
+  SKNotAuthorized* : cstring = "not_authorized"
+  SKConnected*     : cstring = "connected"
+
 type
-  LoginStatusKind* {.pure.} = enum
-    Unknown       = "unknown"
-    NotAuthorized = "not_authorized"
-    Connected     = "connected"
+  AuthResponse* {.importc.} = ref object
+    accessToken*   {.importc.}: cstring ## Access Token for API usage
+    expiresIn*     {.importc.}: int64   ## UNIX time in which login session exprires
+    signedRequest* {.importc.}: cstring ## Client (person) data
+    userID*        {.importc.}: cstring ## Client's user ID
 
-  AuthResponse = object
-    accessToken*:   string        ## Access Token for API usage
-    expiresIn*:     TimeInterval  ## UNIX time in which login session exprires
-    signedRequest*: string        ## Client (person) data
-    userID*:         string       ## Client's user ID
+  LoginStatus* {.importc.} = ref object
+    status* {.importc.}: cstring
+    authResponse*: AuthResponse
 
-  LoginStatus* = object
-    case status*: LoginStatusKind
-    of LoginStatusKind.Connected:
-      authResponse*: AuthResponse
-    else:
-      discard
-
-  FacebookClient* = ref object of RootObj
+  FacebookInfo* {.importc.} = ref object of RootObj
     ## Facebook Client
-    appId*:   string
-    cookie*:  bool
-    xfbml*:   bool
-    version*: string
+    appId*   {.importc.}: cstring
+    cookie*  {.importc.}: bool
+    xfbml*   {.importc.}: bool
+    version* {.importc.}: cstring
 
-var
-  Facebook*: FacebookClient = nil
+# `FB` object binding
+var FB* {.importc, nodecl.}: ref RootObj
+proc init*(fb: ref object, info: FacebookInfo) {.importc, nodecl.}
+proc getLoginStatus*(fb: ref object, callback: proc(response: LoginStatus)) {.importc, nodecl.}
 
-#
-# JavaScript Implementation for Facebook Client
-#
-when defined(js):
-  import dom
+let nim_fb_load_api_async = proc(d: Document, s: string, id: string) =
+  ## Asynchronous Facebook SDK loading proc
+  var
+    fjs: Element = d.getElementsByTagName(s)[0]
+    js:  Element = nil
+  if d.getElementById(id) != nil:
+    return
 
-  let nim_fb_load_api_async = proc(d: Document, s: string, id: string) =
-    ## Asynchronous Facebook SDK loading proc
-    let scriptElements = d.getElementsByTagName(s)[0]
-    var
-      js  = scriptElements[0]
-      fjs = scriptElements[1]
-    if d.getElementById(id) != nil:
-      return
+  js = d.createElement(s)
+  js.setAttribute("id", id)
+  js.setAttribute("src", "//connect.facebook.net/en_US/sdk.js")
 
-    js = d.createElement(s)
-    js.id = id
-    js.src = "//connect.facebook.net/en_US/sdk.js"
+  fjs.parentNode.insertBefore(js, fjs)
 
-    fjs.parentNode.insertBefore(js, fjs)
+nim_fb_load_api_async(document, "script", "facebook-jssdk") # Load Facebook SDK
 
-  nim_fb_load_api_async() # Load Facebook SDK
+proc initializeFacebook*(fi: FacebookInfo, onInit: proc()) =
+  {.emit: """
+  window.fbAsyncInit = function() {
+    FB.init(`fi`);
+    `onInit`();
+  }
+  """.}
 
-  proc init*(appId: string, cookie: bool, xfbml: true, version: string) =
-    ## Asynchronous Facebook SDK Initialization
-    Facebook.new
-
-    Facebook.appId = appId
-    Facebook.cookie = cookie
-    Facebook.xfbml = xfbml
-    Facebook.version = version
-
-    window.fbAsyncInit = proc() =
-      FB.init(Facebook)
-
-  proc login*(fb: FacebookType, callback: proc(response: AuthResponse)) =
-    ## Login
-    FB.getLoginStatus(callback)
+proc login*(onLoggedIn: proc(status: LoginStatus)) =
+  ## Login
+  {.emit: """
+  FB.getLoginStatus(`onLoggedIn`);
+  """.}
