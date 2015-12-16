@@ -55,7 +55,7 @@ proc initializeFacebook*(fi: FacebookInfo, onInit: proc()) =
   }
   """.}
 
-proc login*(onLoggedIn: proc(status: LoginStatus)) =
+proc getLoginStatus*(onLoggedIn: proc(response: LoginStatus)) =
   ## Login
   {.emit: """
   FB.getLoginStatus(`onLoggedIn`);
