@@ -4,27 +4,7 @@ import dom
 import times
 import strutils
 
-const
-  SKUnknown*:       string = "unknown"
-  SKNotAuthorized*: string = "not_authorized"
-  SKConnected*:     string = "connected"
-
-const
-  LoginButtonSmall*:  string = "small"
-  LoginButtonMedium*: string = "medium"
-  LoginButtonLarge*:  string = "large"
-  LoginButtonXlarge*: string = "xlarge"
-
-const
-  AudienceEveryone*: string = "everyone"
-  AudienceFriends*:  string = "friends"
-  AudienceOnlyMe*:   string = "only_me"
-
-const
-  FacebookVersion22*: string = "v2.2"
-  FacebookVersion23*: string = "v2.3"
-  FacebookVersion24*: string = "v2.4"
-  FacebookVersion25*: string = "v2.5"
+import facebook.types
 
 type
   AuthResponse* {.importc.} = ref object
