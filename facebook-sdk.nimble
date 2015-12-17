@@ -8,3 +8,4 @@ srcDir        = "src"
 
 [Deps]
 Requires: "nim >= 0.10.0"
+Requires: "nuuid"
