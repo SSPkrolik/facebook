@@ -1,4 +1,5 @@
-## Linux implementation for Facebook SDK
+## Facebook SDK For Linux (Desktop)
+
 import nuuid
 import os
 import osproc

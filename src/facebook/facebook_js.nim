@@ -1,4 +1,4 @@
-## Facebook SDK Public API
+## Facebook SDK For JavaScript (Web)
 
 import dom
 import times
