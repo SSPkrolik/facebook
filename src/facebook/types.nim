@@ -18,13 +18,18 @@ const
   AudienceFriends*:  string = "friends"
   AudienceOnlyMe*:   string = "only_me"
 
-  FacebookVersion22*: string = "v2.2"
-  FacebookVersion23*: string = "v2.3"
-  FacebookVersion24*: string = "v2.4"
-  FacebookVersion25*: string = "v2.5"
-
   FacebookUriScheme* = "https"
   FacebookUriDomain* = "www.facebook.com"
+
+type FacebookVersion* {.pure.} = enum
+    v20 = "v2.0"
+    v21 = "v2.1"
+    v22 = "v2.2"
+    v23 = "v2.3"
+    v24 = "v2.4"
+
+proc lastVersion*(): FacebookVersion = high(FacebookVersion)
+    ## Returns last supported version of Facebook API
 
 type
   LoginDialogResponseType* {.pure.} = enum

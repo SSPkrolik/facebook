@@ -32,6 +32,19 @@ proc cookie*(fi: FacebookInfo): EM_BOOL {.jsimportProp.}
 proc xfbml*(fi: FacebookInfo): EM_BOOL {.jsimportProp.}
 proc version*(fi: FacebookInfo): string {.jsimportProp.}
 
+proc `appId=`*(fi: FacebookInfo, appId: string) {.jsimportProp.}
+proc `cookie=`*(fi: FacebookInfo, cookie: EM_BOOL) {.jsimportProp.}
+proc `xfbml=`*(fi: FacebookInfo, xfbml: EM_BOOL) {.jsimportProp.}
+proc `version=`*(fi: FacebookInfo, version: string) {.jsimportProp.}
+
+proc newFacebookInfoPrivate(): FacebookInfo {.jsimportgWithName: "function() { return {}; }".}
+proc newFacebookInfo*(appId: string, cookie: bool, xfbml: bool, version: FacebookVersion): FacebookInfo =
+    result = newFacebookInfoPrivate()
+    result.appId = appId
+    result.cookie = if cookie: 1.EM_BOOL else: 0.EM_BOOL
+    result.xfbml = if xfbml: 1.EM_BOOL else: 0.EM_BOOL
+    result.version = $version
+
 type FacebookJSAPI = ref object of JSObj
     ## Just JavaScript object. In Facebook SDK is expressed via
     ## global `FB` variable, and is a singleton.
