@@ -53,7 +53,7 @@ type FacebookJSAPI = ref object of JSObj
 
 proc init*(fb: FacebookJSAPI, fi: FacebookInfo) {.jsImport.}
 proc getLoginStatus(fb: FacebookJSAPI, callback: proc(response: LoginStatus)) {.jsImport.}
-proc login(fb: FacebookJSAPI, callback: proc(response: AuthResponse)) {.jsImport.}
+proc login(fb: FacebookJSAPI, callback: proc(response: LoginStatus)) {.jsImport.}
 proc logout(fb: FacebookJSAPI, callback: proc(response: AuthResponse)) {.jsImport.}
 
 type Window = ref object of JSObj
@@ -86,26 +86,26 @@ let nim_fb_load_api_async = proc(s: string, id: string) =
     fjs.parentNode.insertBefore(js, fjs);
     """, cstring(s), cstring(id))
 
-nim_fb_load_api_async("script", "facebook-jssdk") # Load Facebook SDK
-
 proc initializeFacebook*(fi: FacebookInfo, onInit: proc()) =
-    if FB.isNil():
-        FB = globalEmbindObject(FacebookJSAPI, "FB")
     jsRef(onInit)
 
     let cb = proc() {.cdecl.} =
+        if FB.isNil():
+            FB = globalEmbindObject(FacebookJSAPI, "FB")
         FB.init(fi)
         onInit()
     jsRef(cb)
 
     window.fbAsyncInit = cb
 
+    nim_fb_load_api_async("script", "facebook-jssdk") # Load Facebook SDK
+
 proc getLoginStatus*(onLoggedIn: proc(response: LoginStatus)) =
     jsRef(onLoggedIn)
     if not FB.isNil():
         FB.getLoginStatus(onLoggedIn)
 
-proc login*(callback: proc(response: AuthResponse)) =
+proc login*(callback: proc(response: LoginStatus)) =
     jsRef(callback)
     FB.login(callback)
 
