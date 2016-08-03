@@ -124,13 +124,13 @@ let nim_fb_load_api_async = proc(s: string, id: string) =
     """, cstring(s), cstring(id))
 
 proc initializeFacebook*(fi: FacebookInfo, onInit: proc()) =
-    jsRef(onInit)
-
-    let cb = proc() {.cdecl.} =
+    var cb: proc()
+    cb = proc() =
         if FB.isNil():
             FB = globalEmbindObject(FacebookSdk, "FB")
         FB.init(fi)
         onInit()
+        jsUnref(cb)
     jsRef(cb)
 
     window.fbAsyncInit = cb
@@ -150,20 +150,17 @@ proc logout*(callback: proc(response: AuthResponse)) =
     jsRef(callback)
     FB.logout(callback)
 
-import nimx.system_logger
-
 proc userpic*(userId: string, callback: proc(source: string)) =
     ## Get source of user's profile picture and pass it to callback
     ## which processes it according to application logic.
-    jsRef(callback)
 
-    proc picCallback(response: FacebookApiProfilePictureResponse) =
+    var picCallback: proc(response: FacebookApiProfilePictureResponse)
+    picCallback = proc(response: FacebookApiProfilePictureResponse) =
         if response.hasOwnProperty("error"):
-            logi "[Facebook] Response error code: ", response.error.code
             callback(nil)
         else:
-            logi "[Facebook] Received profile picture URL: ", response.data.url
             callback(response.data.url)
+        jsUnref(picCallback)
 
     jsRef(picCallback)
 
