@@ -9,6 +9,9 @@ import uri
 
 import facebook.types
 
+type AuthResponse* = ref object
+
+
 proc run*(loginDialog: LoginDialog, callback: proc(response: string)) =
   ## Perform login into Facebook
   if execShellCmd("xdg-open '$#'" % [loginDialog.loginURL()]) != 0:

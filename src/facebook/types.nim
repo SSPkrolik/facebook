@@ -5,21 +5,22 @@ import strutils
 import uri
 
 const
-  SKUnknown*:       string = "unknown"
-  SKNotAuthorized*: string = "not_authorized"
-  SKConnected*:     string = "connected"
+    LoginButtonSmall*:  string = "small"
+    LoginButtonMedium*: string = "medium"
+    LoginButtonLarge*:  string = "large"
+    LoginButtonXlarge*: string = "xlarge"
 
-  LoginButtonSmall*:  string = "small"
-  LoginButtonMedium*: string = "medium"
-  LoginButtonLarge*:  string = "large"
-  LoginButtonXlarge*: string = "xlarge"
+    AudienceEveryone*: string = "everyone"
+    AudienceFriends*:  string = "friends"
+    AudienceOnlyMe*:   string = "only_me"
 
-  AudienceEveryone*: string = "everyone"
-  AudienceFriends*:  string = "friends"
-  AudienceOnlyMe*:   string = "only_me"
+    FacebookUriScheme* = "https"
+    FacebookUriDomain* = "www.facebook.com"
 
-  FacebookUriScheme* = "https"
-  FacebookUriDomain* = "www.facebook.com"
+type FacebookLoginStatus* {.pure.} = enum
+    Unknown       = "unknown"
+    NotAuthorized = "not_authorized"
+    Connected     = "connected"
 
 type FacebookVersion* {.pure.} = enum
     v20 = "v2.0"
@@ -32,10 +33,10 @@ proc lastVersion*(): FacebookVersion = high(FacebookVersion)
     ## Returns last supported version of Facebook API
 
 type
-  LoginDialogResponseType* {.pure.} = enum
-    Token        = "token"
-    Code         = "code"
-    TokenAndCode = "code%20token"
+    LoginDialogResponseType* {.pure.} = enum
+        Token        = "token"
+        Code         = "code"
+        TokenAndCode = "code%20token"
 
 type
   LoginDialog* = ref object

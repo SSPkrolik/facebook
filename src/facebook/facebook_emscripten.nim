@@ -8,6 +8,8 @@ import jsbind
 
 import facebook.types
 
+proc hasOwnProperty(o: JSObj, prop: string): bool {.jsimport.}
+
 type AuthResponse* = ref object of JSObj
     ## Response from Facebook HTTP API gateway
 
@@ -16,12 +18,12 @@ proc expiresIn*(ar: AuthResponse): cint {.jsimportProp}
 proc signedRequest*(ar: AuthResponse): string {.jsimportProp} 
 proc userID*(ar: AuthResponse): string {.jsimportProp} 
 
-type LoginStatus* = ref object of JSObj
+type LoginStatusResponse* = ref object of JSObj
     ## Information we get about user login status from Facebook's
     ## AuthResponse object
 
-proc status*(ls: LoginStatus): string {.jsimportProp.}
-proc authResponse*(ls: LoginStatus): AuthResponse {.jsimportProp.}
+proc status*(ls: LoginStatusResponse): string {.jsimportProp.}
+proc authResponse*(ls: LoginStatusResponse): AuthResponse {.jsimportProp.}
 
 type FacebookInfo* = ref object of JSObj
     ## Technical information about current state of Facebook
@@ -37,6 +39,8 @@ proc `cookie=`*(fi: FacebookInfo, cookie: EM_BOOL) {.jsimportProp.}
 proc `xfbml=`*(fi: FacebookInfo, xfbml: EM_BOOL) {.jsimportProp.}
 proc `version=`*(fi: FacebookInfo, version: string) {.jsimportProp.}
 
+proc emptyJSObj(): JSObj {.jsimportgWithName: "function() { return {}; }".}
+
 proc newFacebookInfoPrivate(): FacebookInfo {.jsimportgWithName: "function() { return {}; }".}
 proc newFacebookInfo*(appId: string, cookie: bool, xfbml: bool, version: FacebookVersion): FacebookInfo =
     result = newFacebookInfoPrivate()
@@ -45,16 +49,49 @@ proc newFacebookInfo*(appId: string, cookie: bool, xfbml: bool, version: Faceboo
     result.xfbml = if xfbml: 1.EM_BOOL else: 0.EM_BOOL
     result.version = $version
 
-type FacebookJSAPI = ref object of JSObj
+
+type FacebookApiResponseError* = ref object of JSObj
+    ## Facebook can sometimes return API call errors
+    ## `error` field in FacebookApiResponse holds the info
+    ## on that error.
+
+proc code*(err: FacebookApiResponseError): int {.jsimportProp.}
+
+type FacebookApiResponse* = ref object of JSObj
+    ## Facebook Graph API response object
+
+proc error*(resp: FacebookApiResponse): FacebookApiResponseError {.jsimportProp.}
+
+type FacebookUserPictureInfo* = ref object of JSObj
+
+proc url*(info: FacebookUserPictureInfo): string {.jsimportProp.}
+
+type FacebookApiProfilePictureResponse* = ref object of JSObj
+
+proc data*(resp: FacebookApiProfilePictureResponse): FacebookUserPictureInfo {.jsimportProp.}
+proc error*(resp: FacebookApiProfilePictureResponse): FacebookApiResponseError {.jsimportProp.}
+
+type FacebookApiParams = ref object of JSObj
+
+proc newFacebookApiParams(): FacebookApiParams {.jsimportgWithName: "function() { return {}; }".}
+proc `redirect=`(params: FacebookApiParams, value: int) {.jsimportProp.}
+proc redirect(params: FacebookApiParams): int {.jsimportProp.}
+
+
+type FacebookSdk* = ref object of JSObj
     ## Just JavaScript object. In Facebook SDK is expressed via
     ## global `FB` variable, and is a singleton.
-    ## User `FB` variable, not referencing to FacebookJSAPI type
+    ## User `FB` variable, not referencing to FacebookApi type
     ## directly.
 
-proc init*(fb: FacebookJSAPI, fi: FacebookInfo) {.jsImport.}
-proc getLoginStatus(fb: FacebookJSAPI, callback: proc(response: LoginStatus)) {.jsImport.}
-proc login(fb: FacebookJSAPI, callback: proc(response: LoginStatus)) {.jsImport.}
-proc logout(fb: FacebookJSAPI, callback: proc(response: AuthResponse)) {.jsImport.}
+# Wrappers for Private SDK API
+
+proc init(fb: FacebookSdk, fi: FacebookInfo) {.jsImport.}
+proc getLoginStatus(fb: FacebookSdk, callback: proc(response: LoginStatusResponse)) {.jsImport.}
+proc login(fb: FacebookSdk, callback: proc(response: LoginStatusResponse)) {.jsImport.}
+proc logout(fb: FacebookSdk, callback: proc(response: AuthResponse)) {.jsImport.}
+
+proc apiUserpic(fb: FacebookSdk, path: string, meth: string, params: JSObj, callback: proc(response: FacebookApiProfilePictureResponse)) {.jsimportWithName: "api".}
 
 type Window = ref object of JSObj
     ## Browser window in JavaScript.
@@ -62,7 +99,7 @@ type Window = ref object of JSObj
 proc `fbAsyncInit=`*(w: Window, cb: proc()) {.jsimportProp.}
 
 var 
-    FB*: FacebookJSAPI = nil
+    FB*: FacebookSdk = nil
         ## `FB` is a global JavaScript object which gives access
         ## to overall Facebook SDK APIs
 
@@ -91,7 +128,7 @@ proc initializeFacebook*(fi: FacebookInfo, onInit: proc()) =
 
     let cb = proc() {.cdecl.} =
         if FB.isNil():
-            FB = globalEmbindObject(FacebookJSAPI, "FB")
+            FB = globalEmbindObject(FacebookSdk, "FB")
         FB.init(fi)
         onInit()
     jsRef(cb)
@@ -100,18 +137,40 @@ proc initializeFacebook*(fi: FacebookInfo, onInit: proc()) =
 
     nim_fb_load_api_async("script", "facebook-jssdk") # Load Facebook SDK
 
-proc getLoginStatus*(onLoggedIn: proc(response: LoginStatus)) =
-    jsRef(onLoggedIn)
+proc getLoginStatus*(callback: proc(response: LoginStatusResponse)) =
+    jsRef(callback)
     if not FB.isNil():
-        FB.getLoginStatus(onLoggedIn)
+        FB.getLoginStatus(callback)
 
-proc login*(callback: proc(response: LoginStatus)) =
+proc login*(callback: proc(response: LoginStatusResponse)) =
     jsRef(callback)
     FB.login(callback)
 
 proc logout*(callback: proc(response: AuthResponse)) =
     jsRef(callback)
     FB.logout(callback)
+
+import nimx.system_logger
+
+proc userpic*(userId: string, callback: proc(source: string)) =
+    ## Get source of user's profile picture and pass it to callback
+    ## which processes it according to application logic.
+    jsRef(callback)
+
+    proc picCallback(response: FacebookApiProfilePictureResponse) =
+        if response.hasOwnProperty("error"):
+            logi "[Facebook] Response error code: ", response.error.code
+            callback(nil)
+        else:
+            logi "[Facebook] Received profile picture URL: ", response.data.url
+            callback(response.data.url)
+
+    jsRef(picCallback)
+
+    let apiParams = newFacebookApiParams()
+    apiParams.redirect = 0
+
+    FB.apiUserpic("/$#/picture" % [userId], "get", apiParams, picCallback)
 
 proc loginUI*(onLogin: proc(), autoLogoutLink: bool = true, maxRows: int = 1, scope: seq[string] = @["public_profile"], size: string = LoginButtonSmall, showFaces: bool = false, defaultAudience: string = "friends"): pointer =
     ## Build Login UI - "blue button"
