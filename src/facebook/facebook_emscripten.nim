@@ -154,19 +154,3 @@ proc userpic*(userId: string, callback: proc(source: string)) =
     apiParams.redirect = 0
 
     globalEmbindObject(FacebookSdk, "FB").apiUserpic("/$#/picture" % [userId], "get", apiParams, picCallback)
-
-#[
-proc loginUI*(onLogin: proc(), autoLogoutLink: bool = true, maxRows: int = 1, scope: seq[string] = @["public_profile"], size: string = LoginButtonSmall, showFaces: bool = false, defaultAudience: string = "friends"): pointer =
-    ## Build Login UI - "blue button"
-    let scopeStr = join(scope, ",")
-    EM_ASM_INT("""
-    var btn = document.createElement("fb:login-button")
-    btn.setAttribute("auto-logout-link", $autoLogoutLink)
-    btn.setAttribute("max-rows", $maxRows)
-    btn.setAttribute("scope", scopeStr)
-    btn.setAttribute("size", size.cstring)
-    btn.setAttribute("show-faces", $showFaces)
-    btn.setAttribute("default-audience", defaultAudience.cstring)
-    """)
-    return nil
-]#
