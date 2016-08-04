@@ -1,5 +1,4 @@
 ## Cross-Platform Facebook API
-
 import facebook.types
 export types
 

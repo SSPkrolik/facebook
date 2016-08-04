@@ -25,6 +25,8 @@ type LoginStatusResponse* = ref object of JSObj
 proc status*(ls: LoginStatusResponse): string {.jsimportProp.}
 proc authResponse*(ls: LoginStatusResponse): AuthResponse {.jsimportProp.}
 
+type LogoutStatusResponse* = ref object of JSObj
+
 type FacebookInfo* = ref object of JSObj
     ## Technical information about current state of Facebook
     ## server API we are calling
@@ -87,7 +89,7 @@ type FacebookSdk* = ref object of JSObj
 proc init(fb: FacebookSdk, fi: FacebookInfo) {.jsImport.}
 proc getLoginStatus(fb: FacebookSdk, callback: proc(response: LoginStatusResponse)) {.jsImport.}
 proc login(fb: FacebookSdk, callback: proc(response: LoginStatusResponse)) {.jsImport.}
-proc logout(fb: FacebookSdk, callback: proc(response: AuthResponse)) {.jsImport.}
+proc logout(fb: FacebookSdk, callback: proc(response: LogoutStatusResponse)) {.jsImport.}
 
 proc apiUserpic(fb: FacebookSdk, path: string, meth: string, params: FacebookApiParams, callback: proc(response: FacebookApiProfilePictureResponse)) {.jsimportWithName: "api".}
 
@@ -125,16 +127,31 @@ proc initializeFacebook*(fi: FacebookInfo, onInit: proc()) =
     nim_fb_load_api_async("script", "facebook-jssdk") # Load Facebook SDK
 
 proc getLoginStatus*(callback: proc(response: LoginStatusResponse)) =
-    jsRef(callback)
-    globalEmbindObject(FacebookSdk, "FB").getLoginStatus(callback)
+    var cb: proc(response: LoginStatusResponse)
+    cb = proc(response: LoginStatusResponse) =
+        callback(response)
+        jsUnref(cb)
+    jsRef(cb)
+
+    globalEmbindObject(FacebookSdk, "FB").getLoginStatus(cb)
 
 proc login*(callback: proc(response: LoginStatusResponse)) =
-    jsRef(callback)
-    globalEmbindObject(FacebookSdk, "FB").login(callback)
+    var cb: proc(response: LoginStatusResponse)
+    cb = proc(response: LoginStatusResponse) =
+        callback(response)
+        jsUnref(cb)
+    jsRef(cb)
 
-proc logout*(callback: proc(response: AuthResponse)) =
-    jsRef(callback)
-    globalEmbindObject(FacebookSdk, "FB").logout(callback)
+    globalEmbindObject(FacebookSdk, "FB").login(cb)
+
+proc logout*(callback: proc(response: LogoutStatusResponse)) =
+    var cb: proc(response: LogoutStatusResponse)
+    cb = proc(response: LogoutStatusResponse) =
+        callback(response)
+        jsUnref(cb)
+    jsRef(cb)
+
+    globalEmbindObject(FacebookSdk, "FB").logout(cb)
 
 proc userpic*(userId: string, callback: proc(source: string)) =
     ## Get source of user's profile picture and pass it to callback
