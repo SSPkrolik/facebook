@@ -153,8 +153,6 @@ proc logout*(callback: proc(response: LogoutStatusResponse)) =
 
     globalEmbindObject(FacebookSdk, "FB").logout(cb)
 
-proc userpic*(userId: string, width, )
-
 proc userpic*(userId: string, pictureType: FacebookUserPicture = FacebookUserPicture.small, callback: proc(source: string)) =
     ## Get source of user's profile picture and pass it to callback
     ## which processes it according to application logic.
