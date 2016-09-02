@@ -29,6 +29,9 @@ type FacebookVersion* {.pure.} = enum
     v23 = "v2.3"
     v24 = "v2.4"
 
+type FacebookUserPicture* {.pure.} = enum
+    small, normal, album, large, square
+
 proc lastVersion*(): FacebookVersion = high(FacebookVersion)
     ## Returns last supported version of Facebook API
 

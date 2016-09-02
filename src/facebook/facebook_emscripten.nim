@@ -13,10 +13,10 @@ proc hasOwnProperty(o: JSObj, prop: string): bool {.jsimport.}
 type AuthResponse* = ref object of JSObj
     ## Response from Facebook HTTP API gateway
 
-proc accessToken*(ar: AuthResponse): string {.jsimportProp} 
-proc expiresIn*(ar: AuthResponse): int {.jsimportProp} 
-proc signedRequest*(ar: AuthResponse): string {.jsimportProp} 
-proc userID*(ar: AuthResponse): string {.jsimportProp} 
+proc accessToken*(ar: AuthResponse): string {.jsimportProp}
+proc expiresIn*(ar: AuthResponse): int {.jsimportProp}
+proc signedRequest*(ar: AuthResponse): string {.jsimportProp}
+proc userID*(ar: AuthResponse): string {.jsimportProp}
 
 type LoginStatusResponse* = ref object of JSObj
     ## Information we get about user login status from Facebook's
@@ -153,7 +153,9 @@ proc logout*(callback: proc(response: LogoutStatusResponse)) =
 
     globalEmbindObject(FacebookSdk, "FB").logout(cb)
 
-proc userpic*(userId: string, callback: proc(source: string)) =
+proc userpic*(userId: string, width, )
+
+proc userpic*(userId: string, pictureType: FacebookUserPicture = FacebookUserPicture.small, callback: proc(source: string)) =
     ## Get source of user's profile picture and pass it to callback
     ## which processes it according to application logic.
 
@@ -170,4 +172,9 @@ proc userpic*(userId: string, callback: proc(source: string)) =
     let apiParams = newFacebookApiParams()
     apiParams.redirect = 0
 
-    globalEmbindObject(FacebookSdk, "FB").apiUserpic("/$#/picture" % [userId], "get", apiParams, picCallback)
+    var request = ("/$#/picture" % [userId])
+
+    if pictureType != FacebookUserPicture.small:
+        request &= ("?type=" & $pictureType)
+
+    globalEmbindObject(FacebookSdk, "FB").apiUserpic(request, "get", apiParams, picCallback)
