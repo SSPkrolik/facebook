@@ -8,4 +8,4 @@ srcDir      = "src"
 # Deps
 requires "nim >= 0.10.0"
 requires "nuuid"
-requires "https://github.com/yglukhov/emscripten.nim"
+requires "jsbind"
