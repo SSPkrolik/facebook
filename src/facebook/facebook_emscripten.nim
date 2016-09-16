@@ -3,7 +3,7 @@ import macros
 import times
 import strutils
 
-import emscripten
+import jsbind.emscripten
 import jsbind
 
 import facebook.types
