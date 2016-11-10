@@ -14,8 +14,8 @@ elif defined(emscripten):
 
 elif defined(android):
     const facebookSupported*: bool = false
-    import facebook_android
-    export facebook_android
+#    import facebook_android
+#    export facebook_android
 
 elif defined(linux):
     const facebookSupported*: bool = false
