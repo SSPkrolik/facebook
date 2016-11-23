@@ -176,3 +176,79 @@ proc userpic*(userId: string, pictureType: FacebookUserPicture = FacebookUserPic
         request &= ("?type=" & $pictureType)
 
     globalEmbindObject(FacebookSdk, "FB").apiUserpic(request, "get", apiParams, picCallback)
+
+proc userpicWithSize*(userId: string, height: int, width: int, callback: proc(source: string)) =
+    ## Get source of user's profile picture with width and height and pass it to callback
+    var picCallback: proc(response: FacebookApiProfilePictureResponse)
+    picCallback = proc(response: FacebookApiProfilePictureResponse) =
+        if response.hasOwnProperty("error"):
+            callback(nil)
+        else:
+            callback(response.data.url)
+        jsUnref(picCallback)
+
+    jsRef(picCallback)
+
+    let apiParams = newFacebookApiParams()
+    apiParams.redirect = 0
+
+    var request = ("/$#/picture" % [userId])
+    request &= ("?type=" & $FacebookUserPicture.large)
+    request &= ("&height=" & $height)
+    request &= ("&width=" & $width)
+
+    globalEmbindObject(FacebookSdk, "FB").apiUserpic(request, "get", apiParams, picCallback)
+
+type FacebookUserResponse* = ref object of JSObj
+
+proc name*(response: FacebookUserResponse): string {.jsimportProp.}
+
+proc apiUser(fb: FacebookSdk, path: string, meth: string, callback: proc(response: FacebookUserResponse)) {.jsimportWithName: "api".}
+
+proc fbUser*(userId: string, callback: proc(response: FacebookUserResponse)) =
+    ## Get user info and pass it to callback
+    var cb: proc(response: FacebookUserResponse)
+    cb = proc(response: FacebookUserResponse) =
+        callback(response)
+        jsUnref(cb)
+    jsRef(cb)
+
+    var request = ("/$#" % [userId])
+    globalEmbindObject(FacebookSdk, "FB").apiUser(request, "get", cb)
+
+type FacebookUiParams = ref object of JSObj
+
+proc newFacebookUiParams*(): FacebookUiParams {.jsimportgWithName: "function() { return {}; }".}
+
+proc `method=`(params: FacebookUiParams, value: string) {.jsimportProp.}
+proc `method`(params: FacebookUiParams): string {.jsimportProp.}
+
+proc `uiMethod=`*(params: FacebookUiParams, value: string) = params.`method` = value
+proc uiMethod*(params: FacebookUiParams): string = result = params.`method`
+
+proc `action=`*(params: FacebookUiParams, value: string) {.jsimportProp.}
+proc action*(params: FacebookUiParams): string {.jsimportProp.}
+
+proc `product=`*(params: FacebookUiParams, value: string) {.jsimportProp.}
+proc product*(params: FacebookUiParams): string {.jsimportProp.}
+
+proc `quantity=`*(params: FacebookUiParams, value: int) {.jsimportProp.}
+proc quantity*(params: FacebookUiParams): int {.jsimportProp.}
+
+type FacebookUiResponse* = ref object of JSObj
+
+proc error*(params: FacebookUiResponse): int {.jsimportProp.}
+proc error_code*(params: FacebookUiResponse): int {.jsimportProp.}
+proc error_message*(params: FacebookUiResponse): int {.jsimportProp.}
+proc status*(params: FacebookUiResponse): int {.jsimportProp.}
+
+proc uiCall(fb: FacebookSdk, fp: FacebookUiParams, callback: proc(response: FacebookUiResponse)) {.jsimportWithName: "ui".}
+
+proc uiCall*(params: FacebookUiParams, callback: proc(response: FacebookUiResponse)) =
+    var cb: proc(response: FacebookUiResponse)
+    cb = proc(response: FacebookUiResponse) =
+        callback(response)
+        jsUnref(cb)
+    jsRef(cb)
+
+    globalEmbindObject(FacebookSdk, "FB").uiCall(params, cb)
