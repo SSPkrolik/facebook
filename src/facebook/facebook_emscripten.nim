@@ -203,9 +203,11 @@ type FacebookUserResponse* = ref object of JSObj
 
 proc name*(response: FacebookUserResponse): string {.jsimportProp.}
 
+proc first_name*(response: FacebookUserResponse): string {.jsimportProp.}
+
 proc apiUser(fb: FacebookSdk, path: string, meth: string, callback: proc(response: FacebookUserResponse)) {.jsimportWithName: "api".}
 
-proc fbUser*(userId: string, callback: proc(response: FacebookUserResponse)) =
+proc fbUser*(userId: string, args: seq[string], callback: proc(response: FacebookUserResponse)) =
     ## Get user info and pass it to callback
     var cb: proc(response: FacebookUserResponse)
     cb = proc(response: FacebookUserResponse) =
@@ -214,7 +216,17 @@ proc fbUser*(userId: string, callback: proc(response: FacebookUserResponse)) =
     jsRef(cb)
 
     var request = ("/$#" % [userId])
+    if not args.isNil:
+        request &= "?fields="
+        for i, arg in args:
+            request &= arg
+            if i < args.len - 1:
+                request &= ","
+
     globalEmbindObject(FacebookSdk, "FB").apiUser(request, "get", cb)
+
+proc fbUser*(userId: string, callback: proc(response: FacebookUserResponse)) =
+    fbUser(userId, nil, callback)
 
 type FacebookUiParams = ref object of JSObj
 
